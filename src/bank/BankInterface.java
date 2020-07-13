@@ -6,6 +6,8 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import atm.ATM;
+
 public class BankInterface {
 	
 	public BankInterface(){
@@ -20,13 +22,14 @@ public class BankInterface {
 			System.out.println("|\t [add]       - Top up client account  |");
 			System.out.println("|\t [draw]      - Draw funds             |");
 			System.out.println("|\t [close]     - Close client account   |");
+			System.out.println("|\t [atm]       - Open ATM interface     |");
 			System.out.println("|_____________________________________________|");
 			getInput();
 		}
 	}
 
 	private void getInput() {
-		System.out.print("Command:");
+		System.err.print("Command:");
 		Scanner sc = new Scanner(System.in);
 		sc.useDelimiter(System.lineSeparator());
 		String input = sc.next();
@@ -45,17 +48,28 @@ public class BankInterface {
 				Scanner sca = new Scanner(System.in);
 				int accountNo = Integer.parseInt(sca.nextLine());
 				sca.reset();
-				funds(accountNo, true);
+				System.out.print("Amount to add:");
+				int funda = Integer.parseInt(sc.nextLine());
+				sca.reset();
+				funds(accountNo, funda, true, false);
 				break;
 			case "draw":
 				System.out.print("Enter account number:");	
 				Scanner scd = new Scanner(System.in);
 				int accountNum = Integer.parseInt(scd.nextLine());
 				scd.reset();
-				funds(accountNum, false);
+				System.out.print("Amount to draw:");
+				int fundd = Integer.parseInt(scd.nextLine());
+				scd.reset();
+				if(funds(accountNum, fundd, false, true)){
+					System.out.println("Operaion succesful!");
+				}
 				break;
 			case "close":
 				close();
+				break;
+			case "atm":
+				new ATM(20, 20, 20, 20, 20);
 				break;
 			default:
 				System.err.println("Please enter valid command!");
@@ -142,21 +156,18 @@ public class BankInterface {
 		System.out.print("Enter client name:");
 		Scanner sc = new Scanner(System.in);
 		String name = sc.nextLine();
-		System.out.print("Enter initial balance:");
+		
 		int balance;
 		long nid;
 		try{
+			System.out.print("Enter initial balance:");
 			balance = Integer.parseInt(sc.nextLine());
-		}catch(Exception e){
-			System.out.println("Please enter a number!");
-			balance = Integer.parseInt(sc.nextLine());
-		}
-		System.out.print("Enter client national ID number:");
-		try{
+			System.out.print("Enter client national ID number:");
 			nid = Long.parseLong(sc.nextLine());
-		}catch(Exception e){
-			System.out.println("Please enter a number!");
-			nid = Long.parseLong(sc.nextLine());
+		}catch(NumberFormatException e){
+			System.err.println("Please enter a number!");
+			register();
+			return;
 		}
 		Client c = new Client(name, balance, nid);
 		System.out.print("Credit or debit account? C/D");
@@ -165,7 +176,18 @@ public class BankInterface {
 		String yn = sc.nextLine();
 		if(yn.toLowerCase().equals("y")){
 			System.out.print("Enter card PIN:");
-			int pin = Integer.parseInt(sc.nextLine());
+			int pin = 0;
+			try{
+				pin = Integer.parseInt(sc.nextLine());
+			}catch(NumberFormatException e){
+				System.err.println("Please enter a number:");
+				try{
+					pin = Integer.parseInt(sc.nextLine());
+				}catch(NumberFormatException e1){
+					System.err.println("Invalid PIN number!");
+					return;
+				}
+			}
 			if(cd.toLowerCase().equals("c")){
 				c.registerClientWithCardAccount(balance, true, true, pin);
 			}else{
@@ -178,11 +200,11 @@ public class BankInterface {
 				c.registerClientAccount(balance, false);
 			}
 		}
+		view(nid, false);
 	}
 	
-	public static int funds(int accountNo, boolean adding){
+	public static boolean funds(int accountNo, int fund, boolean adding, boolean fix){
 		Scanner sc = new Scanner(System.in);
-		int fund = 0;
 		try {
 			BufferedReader accountFinder = new BufferedReader(new FileReader("src/bank/accounts.csv"));
 			String row;
@@ -196,41 +218,34 @@ public class BankInterface {
 			accountFinder.close();
 			for(int i = 0; i < data.size(); i++){
 				if(accountNo == Integer.parseInt(data.get(i)[0])){
-					
-					System.out.println("Name: " + data.get(i)[1]);
-					System.out.println(" ");
-					System.out.println("Account #" + data.get(i)[0]);
-					System.out.println("Balance: " + data.get(i)[2]);
-					if(Boolean.parseBoolean(data.get(i)[3])){
-						System.out.println("Type: Credit");
-					}else{
-						System.out.println("Type: Debit");
+					if(!fix){
+						System.out.println("Name: " + data.get(i)[1]);
+						System.out.println(" ");
+						System.out.println("Account #" + data.get(i)[0]);
+						System.out.println("Balance: " + data.get(i)[2]);
+						if(Boolean.parseBoolean(data.get(i)[3])){
+							System.out.println("Type: Credit");
+						}else{
+							System.out.println("Type: Debit");
+						}
+						if(Boolean.parseBoolean(data.get(i)[4])){
+							System.out.println("Card: Yes");
+							System.out.println("Card #" + data.get(i)[6]);
+						}
+						else{
+							System.out.println("Card: No");
+						}
+						System.out.println(" ");
 					}
-					if(Boolean.parseBoolean(data.get(i)[4])){
-						System.out.println("Card: Yes");
-						System.out.println("Card #" + data.get(i)[6]);
-					}
-					else{
-						System.out.println("Card: No");
-					}
-					System.out.println(" ");
-					if(adding){
-						System.out.println("Amount to add:");
-						fund = Integer.parseInt(sc.next());
-						sc.reset();
+					if(adding){			
 						data.get(i)[2] = Integer.toString(Integer.parseInt(data.get(i)[2])+fund);
-						
-						System.out.println("New balance is " + data.get(i)[2]);
+						if(!fix)System.out.println("New balance is " + data.get(i)[2]);
 					}else{
-						System.out.print("Amount to draw:");
-						fund = Integer.parseInt(sc.nextLine());
-						sc.reset();
 						if(Integer.parseInt(data.get(i)[2]) - fund >= 0){
 							data.get(i)[2] = Integer.toString(Integer.parseInt(data.get(i)[2])-fund);
-							System.out.println("New balance is " + data.get(i)[2]);
 						}else{
 							System.out.println("Insufficient funds!");
-							return 0;
+							return false;
 						}
 					}
 				}
@@ -263,7 +278,7 @@ public class BankInterface {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return fund;
+		return true;
 	}
 	
 	private void close(){

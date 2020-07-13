@@ -26,12 +26,25 @@ public class ATM {
 		
 		System.out.println("Welcome!");
 		System.out.println("__________________________");
-		System.out.print("Enter national ID number:");
+		System.err.print("Enter national ID number or [bank] to open the Bank Interface:");
+		String input;
+		input = sc.nextLine();
+		sc.reset();
 		long nid = 0;
 		int account = 0;
 		int pin = 0;
 		try{
-			nid = Long.parseLong(sc.nextLine());
+			nid = Long.parseLong(input);
+		}catch(NumberFormatException e){
+			if(input.equals("bank")){
+				new BankInterface();
+			}else{
+				System.err.println("Please try again!");
+				ATM atm = new ATM(_5s, _10s, _20s, _50s, _10s);
+				return;
+			}
+		}
+		try{
 			BankInterface.view(nid, true);
 			System.out.print("Select account to draw from:");
 			account = Integer.parseInt(sc.nextLine());
@@ -42,33 +55,46 @@ public class ATM {
 			ATM atm = new ATM(_5s, _10s, _20s, _50s, _10s);
 			return;
 		}
-		int amount;
+		
 		if(Client.checkPIN(account, pin)){
-			amount = BankInterface.funds(account, false);
+			System.out.print("Enter amount to draw:");
 			loop:
 				while (true) {
+					int amount = Integer.parseInt(sc.nextLine());
+					sc.reset();
 					try{
+						BankInterface.funds(account,amount, false, true);
 						switch(availabilityCheck(amount)){
 							case 0:			
 								request(amount);
+								BankInterface.view(nid, true);
 								break loop;
 							case 2:
-								System.out.println("Enter sum, divisible by 10:");
+								System.err.print("Enter sum, divisible by 10:");
+								BankInterface.funds(account,amount, true, true);
 								continue loop;
 							case 3:
-								System.out.println("Enter sum, divisible by 20:");
+								System.err.print("Enter sum, divisible by 20:");
+								BankInterface.funds(account,amount, true, true);
 								continue loop;
 							case 4:
-								System.out.println("Enter sum, divisible by 50:");
+								System.err.print("Enter sum, divisible by 50:");
+								BankInterface.funds(account,amount, true, true);
 								continue loop;
 							case 5:
-								System.out.println("Enter sum, divisible by 100:");
+								System.err.print("Enter sum, divisible by 100:");
+								BankInterface.funds(account,amount, true, true);
 								continue loop;
 							case 6:
-								System.out.println("No funds in machine!");
+								System.err.println("No funds in machine!");
+								BankInterface.funds(account,amount, true, true);
 								break loop;
+							case 7:
+								System.err.print("Enter sum, divisible by 5:");
+								BankInterface.funds(account,amount, true, true);
+								continue loop;
 						}
-					} catch(Exception e) {
+					} catch(NumberFormatException e) {
 						System.err.println("Invalid request! Please enter new request: \n");
 						continue loop;
 					}
@@ -114,6 +140,9 @@ public class ATM {
 		int[] amounts = { _5s, _10s, _20s, _50s, _100s };
 		for(int i = 0; i < 5; i++){
 			atmFunds+=amounts[i]*values[i];
+			if(amount%5!=0){
+				return 7;
+			}
 			if(amounts[i] == 0 && amounts[i+1] != 0){
 				if(amount%values[i+1]==0){
 					return 0;
