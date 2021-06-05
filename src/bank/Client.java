@@ -35,9 +35,11 @@ public class Client {
 					}
 				}
 			}
+			dataGetter.close();
 		}catch(Exception e){
-			
+			e.printStackTrace();
 		}
+		
 		return false;
 	}
 	
